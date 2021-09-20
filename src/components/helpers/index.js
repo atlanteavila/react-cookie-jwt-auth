@@ -1,25 +1,20 @@
 import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { authCookie } from "../context/AuthContext";
-export const GetCookie = (cookies, cookieName) => cookies[cookieName].token;
+export const getTokenFromCookie = (cookies, cookieName) => cookies[cookieName];
 export const useGetLocalToken = () => {
-    const [cookies, setCookies, getCookies] = useCookies([authCookie]);
-    const [cookie, setCookie] = useState(null)
-    useEffect(() => {
-        const cookie = getCookies(cookies, authCookie);
-        setCookie(cookie);
-        // eslint ignore next line
-    }, [])
-    return cookie.token;
+    const [cookies] = useCookies([authCookie])
+    const cookie = getTokenFromCookie(cookies)
+    return cookie.token
 }
 
 export const useGetLocalRefreshToken = () => {
-    const [cookies, setCookies, getCookies] = useCookies([authCookie]);
-    const [cookie, setCookie] = useState(null)
-    useEffect(() => {
-        const cookie = getCookies(cookies, authCookie);
-        setCookie(cookie);
-        // eslint ignore next line
-    }, [])
+    const [cookies] = useCookies([authCookie]);
+    const cookie = getTokenFromCookie(cookies, authCookie)
     return cookie.refreshToken;
+}
+
+export const getBrowserAuthCookieValue = () => {
+    let cookieValue = JSON.parse(window.decodeURIComponent(document.cookie.replace(/(?:(?:^|.*;\s*)auth-cookie\s*\=\s*([^;]*).*$)|^.*$/, "$1")));
+    return cookieValue;
 }

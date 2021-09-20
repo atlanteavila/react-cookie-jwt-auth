@@ -12,7 +12,6 @@ export default function AuthContextProvider({ children }) {
 
     const signIn = async (username, password, cb) => {
         const data = await api.postData('auth/signin', { username, password })
-        console.log('the data========>', data);
         try {
             const token = data?.accessToken;
             const decodedToken = jwt_decode(token);
@@ -23,7 +22,11 @@ export default function AuthContextProvider({ children }) {
                 initiatedAt: decodedToken.iat * 1000,
                 expiresAt: decodedToken.exp * 1000,
                 expiresAtFull: new Date(decodedToken.exp),
-                user: true,
+                user: { 
+                    username: data.username,
+                    id: data.id,
+                    id: data.email,
+                },
             }));
             await setUser({
                 authed: true,
@@ -39,7 +42,7 @@ export default function AuthContextProvider({ children }) {
         }
 
     }
-    
+
     const logOut = (cookie) => {
         removeCookie(cookie);
         setUser(null)

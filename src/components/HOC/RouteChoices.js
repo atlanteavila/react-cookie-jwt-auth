@@ -24,9 +24,7 @@ export function PublicRoute({ component: Component, ...rest }) {
         <div style={{ minHeight: `calc(100vh - 200px)` }} className="min-h-screen">
             <Route
                 {...rest}
-                render={(props) => authed?.user === null
-                    ? <Component {...props} />
-                    : <Redirect to='/dashboard' />}
+                render={(props) => <Component {...props} />}
             />
         </div>
     )

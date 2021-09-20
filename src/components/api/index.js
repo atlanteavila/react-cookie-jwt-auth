@@ -1,6 +1,6 @@
 import axios from "axios";
 import jwtDecode from "jwt-decode";
-import { useGetLocalRefreshToken } from "../helpers";
+import { getBrowserAuthCookieValue, useGetLocalRefreshToken } from "../helpers";
 
 const instance = axios.create({
     baseURL: 'http://localhost:8080/api/',
@@ -9,11 +9,14 @@ const instance = axios.create({
     },
 });
 
-function refreshToken() {
+function refreshToken(token, username) {
     return instance.post("/auth/token", {
-        refreshToken: useGetLocalRefreshToken(),
+        username,
+        refreshToken: token,
     });
 }
+
+export const generateCancelTokenSource = () => axios.CancelToken.source();
 
 const apiMethods = {
     getData: (url, params) =>
@@ -22,7 +25,7 @@ const apiMethods = {
             'url': `${url}`,
             'params': params,
         }),
-    postData: async (url, data, headers) => {
+    postData: async (url, data, headers, cancelToken) => {
         const postObject = {
             'method': 'POST',
             'url': url,
@@ -31,7 +34,12 @@ const apiMethods = {
         if (headers) {
             postObject.headers = headers
         }
-        return await instance(postObject)
+        const config = {};
+        if (cancelToken) {
+            config.cancelToken = cancelToken
+        }
+        console.log('passing this config: ', config);
+        return await instance(postObject, config)
             .then((res) => {
                 return res.data
             })
@@ -43,21 +51,33 @@ instance.interceptors.request.use(async (config) => {
     const xAccessHeaders = config.headers['x-access-token']
     if (xAccessHeaders) {
         const jwtTokenExpires = jwtDecode(xAccessHeaders).exp;
-        debugger;
         if (jwtTokenExpires * 1000 <= Date.now()) {
-            console.log('it is expired:::::')
+            let cookieValue = getBrowserAuthCookieValue();
             await instance({
                 method: 'POST',
                 url: '/auth/token',
-                params: {
+                data: {
                     username: "atlante_avila",
-                    refreshToken: "ddFewzLN511IkmazmZQJudscEKNhWZrxDKehmBBygusLqoNLKWkR9zfxSAC9MVy8p7Z8mKvjKvDZPHkwFscVFiQPKni2Gef9h3uafSR1r4Yc6cVJkG5vAZB4AvzcVMN26IRo1Sh1VxLx3YnC59iCX1fuC0PszA9h7ExukgAffWNjfoN2FsphktYvskRkh7yqCiak9CJi3vmicqWqqEum1SyvAtdFTI9fiuj1U6juR5zg1Nt1rQ1wdSUJ0hO8Sle4"
+                    refreshToken: cookieValue.refreshToken,
                 },
             }).then((response) => {
-                console.log('We have a response????', response);
+                config.headers['x-access-token'] = response.data.accessToken
+                const newCookieValue = Object.assign(
+                    {},
+                    cookieValue,
+                    {
+                        ...cookieValue,
+                        token: response.data.accessToken,
+                        refreshToken: response.data.newRefreshToken,
+                        expiresAt: jwtDecode(response.data.accessToken).exp,
+                    }
+                )
+                function setCookie(cName, cValue) {
+                    document.cookie = cName + "=" + cValue + ";";
+                }
+                // Apply setCookie
+                setCookie('auth-cookie', window.encodeURIComponent(JSON.stringify(newCookieValue)))
             })
-        } else {
-            console.log('It\'s not expired!!!')
         }
     }
     return config;
