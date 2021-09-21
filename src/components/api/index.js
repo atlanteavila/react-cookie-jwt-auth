@@ -9,11 +9,21 @@ const instance = axios.create({
     },
 });
 
-function refreshToken(token, username) {
+export const refreshToken = (cookieValue) => {
+    const { refreshToken } = cookieValue
+    let { username } = cookieValue?.user
+    if (!refreshToken || !username) {
+        return Promise.reject('We need a username and a refresh token to run this funciton')
+    }
     return instance.post("/auth/token", {
-        username,
-        refreshToken: token,
-    });
+        method: 'POST',
+        url: '/auth/token',
+        data: {
+            username,
+            refreshToken,
+        },
+    })
+        .then(response => response)
 }
 
 export const generateCancelTokenSource = () => axios.CancelToken.source();
@@ -38,12 +48,11 @@ const apiMethods = {
         if (cancelToken) {
             config.cancelToken = cancelToken
         }
-        console.log('passing this config: ', config);
         return await instance(postObject, config)
             .then((res) => {
                 return res.data
             })
-            .catch(e => console.log('Error occurred'))
+            .catch(e => console.error(e.message))
     }
 }
 
@@ -53,14 +62,7 @@ instance.interceptors.request.use(async (config) => {
         const jwtTokenExpires = jwtDecode(xAccessHeaders).exp;
         if (jwtTokenExpires * 1000 <= Date.now()) {
             let cookieValue = getBrowserAuthCookieValue();
-            await instance({
-                method: 'POST',
-                url: '/auth/token',
-                data: {
-                    username: "atlante_avila",
-                    refreshToken: cookieValue.refreshToken,
-                },
-            }).then((response) => {
+            await refreshToken(cookieValue).then((response) => {
                 config.headers['x-access-token'] = response.data.accessToken
                 const newCookieValue = Object.assign(
                     {},

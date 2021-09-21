@@ -25,9 +25,13 @@ export default function LoginPage() {
         e.preventDefault();
         setSubmiting(true);
         return auth.signIn(formInfo.username, formInfo.password, () => {
-            history.replace(from);
+            if (from?.pathname !== '/') {
+                history.replace(from);
+            } else {
+                history.replace('/dashboard')
+            }
         })
-        .catch(e => alert('An error occurred. Please try again later.'))
+            .catch(e => alert('An error occurred. Please try again later.'))
     }
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-2 sm:px-3 lg:px-12">

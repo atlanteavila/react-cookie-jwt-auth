@@ -38,7 +38,7 @@ export default function AuthContextProvider({ children }) {
                 cb()
             }
         } catch (error) {
-            console.log('Error decoding token', error);
+            console.error('Error decoding token', error);
         }
 
     }
